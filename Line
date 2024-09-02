@@ -1,0 +1,48 @@
+#include <iostream>
+#include <string>
+#include <curl/curl.h> // ใช้สำหรับส่ง HTTP Request
+
+void sendLineNotification(const std::string& message) {
+    CURL* curl;
+    CURLcode res;
+
+    std::string token = "YOUR_LINE_NOTIFY_TOKEN"; // ใส่ Token จาก LINE Notify ของคุณ
+    std::string url = "https://notify-api.line.me/api/notify";
+    std::string payload = "message=" + message;
+
+    struct curl_slist* headers = NULL;
+    headers = curl_slist_append(headers, ("Authorization: Bearer " + token).c_str());
+
+    curl = curl_easy_init();
+    if(curl) {
+        curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+        curl_easy_setopt(curl, CURLOPT_POST, 1L);
+        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, payload.c_str());
+
+        res = curl_easy_perform(curl);
+
+        if(res != CURLE_OK) {
+            std::cerr << "curl_easy_perform() failed: " << curl_easy_strerror(res) << std::endl;
+        }
+
+        curl_easy_cleanup(curl);
+    }
+}
+
+void checkStockAndNotify(const std::string& itemName, int stock, int lowStockThreshold) {
+    if (stock <= lowStockThreshold) {
+        std::string message = "Warning: " + itemName + " is low in stock! (" + std::to_string(stock) + " items left)";
+        sendLineNotification(message);
+    }
+}
+
+int main() {
+    std::string itemName = "Product A";
+    int stock = 5;
+    int lowStockThreshold = 10;
+
+    checkStockAndNotify(itemName, stock, lowStockThreshold);
+
+    return 0;
+}
